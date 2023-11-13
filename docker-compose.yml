@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  app:
+    container_name: app
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src/:/var/www/html
+
+  web:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+      args:
+        - UPSTREAM_NAME=app
+        - FPM_PORT=9000
+    ports:
+      - "${WEB}:80"
+    volumes:
+      - ./src/:/var/www/html
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: db
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: "Asia/Tokyo"
+      # 文字コード指定
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+    ports:
+      - "${DB}:3306"
